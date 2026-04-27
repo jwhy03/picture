@@ -129,7 +129,24 @@
       .card-front {
         background: #fff;
         transform: rotateY(180deg);
-        font-size: clamp(1.25rem, 2.6vw, 2rem);
+        padding: 6px;
+        text-align: center;
+      }
+
+      .flag-img {
+        width: 100%;
+        height: auto;
+        max-height: 40px;
+        object-fit: contain;
+        margin-bottom: 4px;
+      }
+
+      .country-name {
+        display: block;
+        font-size: clamp(0.62rem, 1.4vw, 0.9rem);
+        font-weight: 800;
+        line-height: 1.1;
+        word-break: keep-all;
       }
 
       .actions {
@@ -196,10 +213,26 @@
     </main>
 
     <script>
-      const flags = [
-        "🇰🇷", "🇺🇸", "🇯🇵", "🇨🇳", "🇬🇧", "🇫🇷", "🇩🇪", "🇮🇹", "🇪🇸",
-        "🇧🇷", "🇨🇦", "🇲🇽", "🇦🇺", "🇮🇳", "🇸🇪", "🇳🇴", "🇿🇦", "🇹🇭"
-      ]; // 18종 x 2장 = 36장(6x6)
+      const countries = [
+        { code: "kr", name: "Korea" },
+        { code: "us", name: "United States" },
+        { code: "jp", name: "Japan" },
+        { code: "cn", name: "China" },
+        { code: "gb", name: "United Kingdom" },
+        { code: "fr", name: "France" },
+        { code: "de", name: "Germany" },
+        { code: "it", name: "Italy" },
+        { code: "es", name: "Spain" },
+        { code: "br", name: "Brazil" },
+        { code: "ca", name: "Canada" },
+        { code: "mx", name: "Mexico" },
+        { code: "au", name: "Australia" },
+        { code: "in", name: "India" },
+        { code: "se", name: "Sweden" },
+        { code: "no", name: "Norway" },
+        { code: "za", name: "South Africa" },
+        { code: "th", name: "Thailand" }
+      ];
 
       const players = ["👧 7살 아이", "👨 아빠"];
       let deck = [];
@@ -239,12 +272,17 @@
           button.className = "card";
           button.type = "button";
           button.dataset.index = index;
-          button.setAttribute("aria-label", `카드 ${index + 1}`);
+          button.setAttribute("aria-label", `카드 ${index + 1}: ${item.name}`);
 
           button.innerHTML = `
             <span class="card-inner">
               <span class="card-face card-back">?</span>
-              <span class="card-face card-front">${item.flag}</span>
+              <span class="card-face card-front">
+                <span>
+                  <img class="flag-img" src="https://flagcdn.com/w40/${item.code}.png" alt="${item.name}" />
+                  <span class="country-name">${item.name}</span>
+                </span>
+              </span>
             </span>
           `;
 
@@ -270,7 +308,7 @@
         lock = true;
         const [first, second] = opened;
 
-        if (first.card.flag === second.card.flag) {
+        if (first.idx !== second.idx && first.card.code === second.card.code) {
           first.card.matched = true;
           second.card.matched = true;
           first.cardBtn.classList.add("matched");
@@ -312,7 +350,12 @@
       }
 
       function initGame() {
-        const doubled = [...flags, ...flags].map((flag, id) => ({ id, flag, matched: false }));
+        const doubled = [...countries, ...countries].map((country, id) => ({
+          id,
+          code: country.code,
+          name: country.name,
+          matched: false
+        }));
         deck = shuffle(doubled);
         opened = [];
         lock = false;
