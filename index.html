@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>세계 국기 메모리 게임 (6x6)</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --card-back: #4f46e5;
+        --text: #1f2937;
+        --accent: #14b8a6;
+        --shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, #eef2ff, var(--bg));
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        width: min(920px, 100%);
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: clamp(1.3rem, 2.5vw, 2rem);
+        margin: 0 0 8px;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
+
+      .status {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .player {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 10px;
+        background: #fafafa;
+      }
+
+      .player.active {
+        border-color: var(--accent);
+        background: #ecfeff;
+      }
+
+      .player-name {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .turn {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+      }
+
+      .card {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .card-inner {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        transform-style: preserve-3d;
+        transition: transform 0.35s ease;
+      }
+
+      .card.flipped .card-inner,
+      .card.matched .card-inner {
+        transform: rotateY(180deg);
+      }
+
+      .card-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        backface-visibility: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .card-back {
+        background: var(--card-back);
+        color: #fff;
+        font-size: clamp(1.1rem, 2vw, 1.5rem);
+        font-weight: 800;
+      }
+
+      .card-front {
+        background: #fff;
+        transform: rotateY(180deg);
+        font-size: clamp(1.25rem, 2.6vw, 2rem);
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        border: none;
+        background: #111827;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+
+      .result {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-top: 8px;
+        color: #0f766e;
+        min-height: 1.3rem;
+      }
+
+      @media (max-width: 720px) {
+        .board {
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section class="panel">
+        <h1>🌍 6x6 세계 국기 메모리 게임</h1>
+        <p class="subtitle">
+          2명 전용(7살 아이 + 아빠)으로 만든 메모리 카드 게임이에요. 같은 국기 2장을 맞히면 점수 1점을 얻고,
+          한 번 더 선택할 수 있어요.
+        </p>
+      </section>
+
+      <section class="panel status">
+        <article id="player0" class="player active">
+          <div class="player-name">👧 7살 아이</div>
+          <div>점수: <strong id="score0">0</strong></div>
+        </article>
+        <article id="player1" class="player">
+          <div class="player-name">👨 아빠</div>
+          <div>점수: <strong id="score1">0</strong></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div id="turn" class="turn">현재 차례: 👧 7살 아이</div>
+        <p id="result" class="result" aria-live="polite"></p>
+      </section>
+
+      <section class="board" id="board" aria-label="세계 국기 메모리 보드"></section>
+
+      <section class="actions">
+        <button id="resetBtn" class="btn" type="button">다시 시작</button>
+      </section>
+    </main>
+
+    <script>
+      const flags = [
+        "🇰🇷", "🇺🇸", "🇯🇵", "🇨🇳", "🇬🇧", "🇫🇷", "🇩🇪", "🇮🇹", "🇪🇸",
+        "🇧🇷", "🇨🇦", "🇲🇽", "🇦🇺", "🇮🇳", "🇸🇪", "🇳🇴", "🇿🇦", "🇹🇭"
+      ]; // 18종 x 2장 = 36장(6x6)
+
+      const players = ["👧 7살 아이", "👨 아빠"];
+      let deck = [];
+      let opened = [];
+      let lock = false;
+      let currentPlayer = 0;
+      let scores = [0, 0];
+      let matchedCount = 0;
+
+      const boardEl = document.getElementById("board");
+      const turnEl = document.getElementById("turn");
+      const resultEl = document.getElementById("result");
+      const scoreEls = [document.getElementById("score0"), document.getElementById("score1")];
+      const playerEls = [document.getElementById("player0"), document.getElementById("player1")];
+      const resetBtn = document.getElementById("resetBtn");
+
+      function shuffle(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function setTurnText() {
+        turnEl.textContent = `현재 차례: ${players[currentPlayer]}`;
+        playerEls.forEach((el, idx) => {
+          el.classList.toggle("active", idx === currentPlayer);
+        });
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = "";
+        deck.forEach((item, index) => {
+          const button = document.createElement("button");
+          button.className = "card";
+          button.type = "button";
+          button.dataset.index = index;
+          button.setAttribute("aria-label", `카드 ${index + 1}`);
+
+          button.innerHTML = `
+            <span class="card-inner">
+              <span class="card-face card-back">?</span>
+              <span class="card-face card-front">${item.flag}</span>
+            </span>
+          `;
+
+          button.addEventListener("click", onCardClick);
+          boardEl.appendChild(button);
+        });
+      }
+
+      function onCardClick(event) {
+        if (lock) return;
+
+        const cardBtn = event.currentTarget;
+        const idx = Number(cardBtn.dataset.index);
+        const card = deck[idx];
+
+        if (card.matched || cardBtn.classList.contains("flipped")) return;
+
+        cardBtn.classList.add("flipped");
+        opened.push({ idx, cardBtn, card });
+
+        if (opened.length < 2) return;
+
+        lock = true;
+        const [first, second] = opened;
+
+        if (first.card.flag === second.card.flag) {
+          first.card.matched = true;
+          second.card.matched = true;
+          first.cardBtn.classList.add("matched");
+          second.cardBtn.classList.add("matched");
+          scores[currentPlayer] += 1;
+          scoreEls[currentPlayer].textContent = String(scores[currentPlayer]);
+          matchedCount += 2;
+
+          resultEl.textContent = `정답! ${players[currentPlayer]}가 1점을 얻었어요 🎉`;
+          opened = [];
+          lock = false;
+
+          if (matchedCount === deck.length) {
+            showWinner();
+          }
+          return;
+        }
+
+        resultEl.textContent = "아쉬워요! 다음 사람 차례예요.";
+        setTimeout(() => {
+          first.cardBtn.classList.remove("flipped");
+          second.cardBtn.classList.remove("flipped");
+          opened = [];
+          currentPlayer = currentPlayer === 0 ? 1 : 0;
+          setTurnText();
+          lock = false;
+        }, 800);
+      }
+
+      function showWinner() {
+        if (scores[0] === scores[1]) {
+          resultEl.textContent = "무승부! 둘 다 정말 잘했어요 👏";
+        } else {
+          const winner = scores[0] > scores[1] ? 0 : 1;
+          resultEl.textContent = `게임 끝! 우승: ${players[winner]} 🏆`;
+          currentPlayer = winner;
+          setTurnText();
+        }
+      }
+
+      function initGame() {
+        const doubled = [...flags, ...flags].map((flag, id) => ({ id, flag, matched: false }));
+        deck = shuffle(doubled);
+        opened = [];
+        lock = false;
+        currentPlayer = 0;
+        scores = [0, 0];
+        matchedCount = 0;
+        resultEl.textContent = "";
+        scoreEls.forEach((el) => {
+          el.textContent = "0";
+        });
+        setTurnText();
+        renderBoard();
+      }
+
+      resetBtn.addEventListener("click", initGame);
+      initGame();
+    </script>
+  </body>
+</html>
